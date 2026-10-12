@@ -192,6 +192,8 @@ h1.title{font-weight:700;letter-spacing:-.02em}
 <meta name="apple-mobile-web-app-title" content="Campusly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<script>(function(){var m=document.createElement("script");m.type="module";m.src="campusly-firebase.js";document.head.appendChild(m);window.__csLoadFb=function(){}})();</script>
+<style>@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.12s}.tabbar{view-transition-name:tabbar}@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}</style>
 </head>
 <body>
 
@@ -455,9 +457,12 @@ h1.title{font-weight:700;letter-spacing:-.02em}
   }
 
   /* ===== FIREBASE BRIDGE (campusly-firebase.js sets window.CampuslyAuth) ===== */
-  function rej() { return Promise.reject({ code: "app/offline" }); }
-  var OFFLINE = { login: rej, register: rej, google: rej, reset: rej };
-  function fb() { return window.CampuslyAuth || OFFLINE; }
+  function whenReady() {   // wait up to 8 s for the Firebase file to finish loading
+    return new Promise(function (res, rej) { var t = 0; (function poll() { if (window.CampuslyAuth) return res(window.CampuslyAuth); if (++t > 80) return rej({ code: "app/offline" }); setTimeout(poll, 100); })(); });
+  }
+  function later(name) { return function () { var a = arguments; return whenReady().then(function (api) { return api[name].apply(null, a); }); }; }
+  var PENDING = { login: later("login"), register: later("register"), google: later("google"), reset: later("reset") };
+  function fb() { return window.CampuslyAuth || PENDING; }
   function errText(e) { return window.CampuslyAuth ? window.CampuslyAuth.errText(e) : "Online services could not be loaded. Check your internet connection and reload the page."; }
   function emailMsg(input, msgId) { var v = input.value.trim(); return setError(input, msgId, !v ? "Please enter your email address." : EMAIL_RE.test(v) ? "" : "Enter a valid email address, like name@college.edu."); }
 
@@ -547,6 +552,5 @@ h1.title{font-weight:700;letter-spacing:-.02em}
 })();
 </script>
 <script src="pwa.js" defer></script>
-<script type="module" src="campusly-firebase.js"></script>
 </body>
 </html>

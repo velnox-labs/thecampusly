@@ -18,6 +18,7 @@ const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestor
 
 /* Data that follows the user. Theme stays per device. */
 const KEYS = ["campusly-profile-demo", "campusly-cgpa-demo", "campusly-more-prefs", "campusly-attendance-demo", "campusly-attendance-summary", "campusly-schedule-demo", "campusly-tasks-demo", "campusly-activity"];
+const LAST = "campusly-last-sync", GAP = 60000;   // do not re-check the cloud on every page change
 const EPOCH = "campusly-epoch", UID_KEY = "campusly-uid", DIRTY = "campusly-dirty", SESSION = "campusly-demo-session";
 const onAuthPage = /\/auth(\.html)?$/.test(location.pathname);
 const rawSet = Storage.prototype.setItem, rawRemove = Storage.prototype.removeItem;
@@ -61,8 +62,10 @@ async function start(user) {
   let changed = false;
   if (get(UID_KEY) && get(UID_KEY) !== user.uid) { wipeLocal(); del(EPOCH); changed = true; }   // never show another person's data
   put(UID_KEY, user.uid);
+  if (!changed && get(EPOCH) && get(DIRTY) !== "1" && Date.now() - (+get(LAST) || 0) < GAP) return;
   let snap;
   try { snap = await getDoc(doc(db, "users", user.uid)); } catch (e) { console.warn("Campusly is offline, using this device's data."); return; }
+  put(LAST, String(Date.now()));
   const cloud = snap.exists() ? (snap.data() || {}) : null;
   if (!cloud || typeof cloud.epoch !== "number") {      // brand-new account, or an older test account: start completely clean
     wipeLocal(); put(EPOCH, String(Date.now())); writeProfile(user); await push(); reloadOnce(); return;
@@ -124,5 +127,7 @@ const api = {
   reset: (email) => guard(() => sendPasswordResetEmail(auth, email)),
   logout: async () => { clearTimeout(timer); if (current && get(DIRTY) === "1") await push(); try { await signOut(auth); } catch (e) {} del(SESSION); current = null; location.href = "auth.html"; }
 };
+document.addEventListener("visibilitychange", () => { if (!document.hidden && current) start(current); });   // refresh when the app comes back to the front
 window.CampuslyAuth = api;
 if (window.CS) window.CS.logout = api.logout;
+if (window.__csLogout) api.logout();

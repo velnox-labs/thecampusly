@@ -67,8 +67,13 @@ dialog{border:1px solid var(--border);border-radius:20px;background:var(--card);
 </style>
 <script>try{var t=localStorage.getItem("campusly-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <style>dialog{margin:auto;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto}</style>
-<style id="cs-guard">html{visibility:hidden}</style>
-<script>setTimeout(function(){var g=document.getElementById("cs-guard");if(g)g.remove()},4500)</script>
+<script>
+/* Returning users see the page at once; Firebase loads in the background after the page is ready. */
+(function(){var d=document,ok=false;try{ok=localStorage.getItem("campusly-demo-session")==="1"}catch(e){}
+if(!ok){var s=d.createElement("style");s.id="cs-guard";s.textContent="html{visibility:hidden}";d.head.appendChild(s);setTimeout(function(){var g=d.getElementById("cs-guard");if(g)g.remove()},4500)}
+var loaded=false;window.__csLoadFb=function(){if(loaded)return;loaded=true;var m=d.createElement("script");m.type="module";m.src="campusly-firebase.js";d.head.appendChild(m)};
+if(ok){window.addEventListener("load",function(){(window.requestIdleCallback||function(f){setTimeout(f,200)})(window.__csLoadFb,{timeout:1200})})}else{window.__csLoadFb()}})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#F4F7FC">
 <meta name="description" content="Campusly: attendance, schedule, tasks and CGPA for students, all in one place.">
@@ -76,6 +81,7 @@ dialog{border:1px solid var(--border);border-radius:20px;background:var(--card);
 <meta name="apple-mobile-web-app-title" content="Campusly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml"><link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>@view-transition{navigation:auto}::view-transition-old(root),::view-transition-new(root){animation-duration:.12s}.tabbar{view-transition-name:tabbar}@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -167,7 +173,11 @@ window.CS = (function () {
   function initials(n) { return n.trim().split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "?"; }
   function setTheme(t) { document.documentElement.setAttribute("data-theme", t); s(K.theme, t); s(K.mode, t); }
   function loggedIn() { try { return localStorage.getItem(K.session) === "1" || sessionStorage.getItem(K.session) === "1"; } catch (e) { return false; } }
-  function logout() { try { localStorage.removeItem(K.session); sessionStorage.removeItem(K.session); } catch (e) {} window.location.href = "auth.html"; }
+  function logout() {   // Firebase signs the user out; if it cannot load, fall back to a local sign-out
+    if (window.CampuslyAuth && window.CampuslyAuth.logout) return window.CampuslyAuth.logout();
+    window.__csLogout = 1; if (window.__csLoadFb) window.__csLoadFb();
+    setTimeout(function () { try { localStorage.removeItem(K.session); sessionStorage.removeItem(K.session); } catch (e) {} window.location.href = "auth.html"; }, 3000);
+  }
 
   /* ---- shared demo data (same seed the Schedule and Tasks pages use when storage is empty) ---- */
   function schedSeed() { return []; }
@@ -493,6 +503,5 @@ window.CS = (function () {
 })();
 </script>
 <script src="pwa.js" defer></script>
-<script type="module" src="campusly-firebase.js"></script>
 </body>
 </html>

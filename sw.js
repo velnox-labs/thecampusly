@@ -1,10 +1,11 @@
 /* Campusly service worker: makes the app installable and usable offline.
    Bump VERSION whenever you deploy new files so installed apps pick up the update. */
-const VERSION = "campusly-v1";
+const VERSION = "campusly-v3";
 const SHELL = ["./", "index.html", "auth.html", "attendance.html", "schedule.html", "tasks.html", "more.html", "offline.html",
   "campusly-firebase.js", "pwa.js", "manifest.webmanifest", "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"];
 
-self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL))); });
+// One missing file must never stop the app from installing, so each file is cached on its own.
+self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSION).then((c) => Promise.all(SHELL.map((u) => c.add(u).catch(() => null))))); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
