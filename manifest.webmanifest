@@ -1,0 +1,26 @@
+{
+  "id": "./index.html",
+  "name": "Campusly",
+  "short_name": "Campusly",
+  "description": "Attendance, schedule, tasks and CGPA for students, all in one place.",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F7FC",
+  "theme_color": "#356DFF",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Mark attendance", "url": "attendance.html#mark", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Today's schedule", "url": "schedule.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Tasks and projects", "url": "tasks.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
