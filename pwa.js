@@ -2,6 +2,15 @@
    offers "Install app", and tells people when a new version is ready. */
 (function () {
   "use strict";
+  if (window.parent !== window) {   // inside the shell: only forward the Install item to the shell
+    document.addEventListener("DOMContentLoaded", function () {
+      var item = document.getElementById("installMenu"); if (!item) return;
+      function ref() { try { item.hidden = !window.parent.CampuslyPWA.canInstall(); } catch (e) {} }
+      item.addEventListener("click", function () { try { window.parent.CampuslyPWA.install(); } catch (e) {} });
+      ref(); setInterval(ref, 1500);
+    });
+    return;
+  }
   var DISMISS = "campusly-install-dismissed", deferred = null;
   var standalone = function () { return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true; };
   var ios = (/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) && !window.MSStream;

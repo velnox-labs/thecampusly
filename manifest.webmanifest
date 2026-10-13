@@ -19,8 +19,8 @@
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "Mark attendance", "url": "attendance.html#mark", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Today's schedule", "url": "schedule.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Tasks and projects", "url": "tasks.html", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+    { "name": "Mark attendance", "url": "index.html#attendance:mark", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Today's schedule", "url": "index.html#schedule", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Tasks and projects", "url": "index.html#tasks", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

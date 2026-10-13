@@ -200,11 +200,11 @@ dialog::backdrop{background:rgba(10,20,48,.55)}
 </style>
 <script>try{var t=localStorage.getItem("campusly-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <script>
-/* Returning users see the page at once; Firebase loads in the background after the page is ready. */
-(function(){var d=document,ok=false;try{ok=localStorage.getItem("campusly-demo-session")==="1"}catch(e){}
-if(!ok){var s=d.createElement("style");s.id="cs-guard";s.textContent="html{visibility:hidden}";d.head.appendChild(s);setTimeout(function(){var g=d.getElementById("cs-guard");if(g)g.remove()},4500)}
-var loaded=false;window.__csLoadFb=function(){if(loaded)return;loaded=true;var m=d.createElement("script");m.type="module";m.src="campusly-firebase.js";d.head.appendChild(m)};
-if(ok){window.addEventListener("load",function(){(window.requestIdleCallback||function(f){setTimeout(f,200)})(window.__csLoadFb,{timeout:1200})})}else{window.__csLoadFb()}})();
+/* Pages live inside the Campusly shell (index.html). The shell signs people in and loads Firebase. */
+(function(){var d=document;
+if(window.parent!==window){d.documentElement.classList.add("embedded");return}
+var T={"home.html":"home","attendance.html":"attendance","schedule.html":"schedule","tasks.html":"tasks","more.html":"more"},t=T[location.pathname.split("/").pop()];
+if(t){location.replace("index.html#"+t+(location.hash?":"+location.hash.slice(1):""));return}})();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#F4F7FC">
@@ -275,7 +275,7 @@ if(ok){window.addEventListener("load",function(){(window.requestIdleCallback||fu
         <button class="menu" type="button" data-go="profile"><span class="tile t-blue"><svg class="ic"><use href="#i-user"/></svg></span><span class="m"><b>My Profile</b><small>View and edit your personal details</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
         <button class="menu" type="button" data-go="cgpa"><span class="tile t-green"><svg class="ic"><use href="#i-calc"/></svg></span><span class="m"><b>CGPA Calculator</b><small>Calculate your SGPA and CGPA</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
         <button class="menu" type="button" data-go="settings"><span class="tile t-purple"><svg class="ic"><use href="#i-sliders"/></svg></span><span class="m"><b>Appearance &amp; Settings</b><small>Theme, preferences and demo data</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
-        <button class="menu" type="button" onclick="window.location.href='attendance.html#settings'"><span class="tile t-green"><svg class="ic"><use href="#i-att"/></svg></span><span class="m"><b>Attendance Target</b><small>Set your attendance target percentage</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
+        <button class="menu" type="button" onclick="CS.go('attendance.html#settings')"><span class="tile t-green"><svg class="ic"><use href="#i-att"/></svg></span><span class="m"><b>Attendance Target</b><small>Set your attendance target percentage</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
         <button class="menu" type="button" data-go="about"><span class="tile t-blue"><svg class="ic"><use href="#i-info"/></svg></span><span class="m"><b>About Campusly</b><small>App information and version</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
         <button class="menu" type="button" data-go="help"><span class="tile t-purple"><svg class="ic"><use href="#i-help"/></svg></span><span class="m"><b>Help</b><small>FAQs and useful information</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
         <button class="menu" type="button" id="installMenu" hidden><span class="tile t-green"><svg class="ic"><use href="#i-plus"/></svg></span><span class="m"><b>Install app</b><small>Add Campusly to your home screen</small></span><svg class="ic"><use href="#i-chev"/></svg></button>
@@ -399,6 +399,7 @@ window.CS = (function () {
   function setTheme(t) { document.documentElement.setAttribute("data-theme", t); s(K.theme, t); s(K.mode, t); }
   function loggedIn() { try { return localStorage.getItem(K.session) === "1" || sessionStorage.getItem(K.session) === "1"; } catch (e) { return false; } }
   function logout() {   // Firebase signs the user out; if it cannot load, fall back to a local sign-out
+    if (window.parent !== window && window.parent.CampuslyShell) return window.parent.CampuslyShell.logout();
     if (window.CampuslyAuth && window.CampuslyAuth.logout) return window.CampuslyAuth.logout();
     window.__csLogout = 1; if (window.__csLoadFb) window.__csLoadFb();
     setTimeout(function () { try { localStorage.removeItem(K.session); sessionStorage.removeItem(K.session); } catch (e) {} window.location.href = "auth.html"; }, 3000);
@@ -520,13 +521,25 @@ window.CS = (function () {
   }
 
   /* ---- shared look for panel + drawer ---- */
+  /* ---- running inside the shell ---- */
+  var EMB = window.parent !== window;
+  function go(u) { if (EMB) { try { window.parent.postMessage({ campusly: "go", url: String(u) }, "*"); return; } catch (e) {} } window.location.href = u; }
+  if (EMB) {
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[href]"); if (!a) return;
+      var h = a.getAttribute("href"); if (/^(index|home|attendance|schedule|tasks|more)\.html(#.*)?$/.test(h)) { e.preventDefault(); go(h); }
+    }, true);
+  }
+  window.addEventListener("storage", function (e) {   // theme chosen in another tab of the app
+    if (e.key === K.theme && (e.newValue === "dark" || e.newValue === "light")) document.documentElement.setAttribute("data-theme", e.newValue);
+  });
   var st = document.createElement("style");
   st.textContent = ".cs-notif{position:absolute;right:0;top:54px;z-index:60;width:min(330px,92vw);max-height:min(70vh,440px);overflow:auto;padding:6px;text-align:left}.cs-notif[hidden],.cs-ov[hidden]{display:none}.cs-notif h2{font-size:.95rem;padding:10px 10px 4px}" +
     ".cs-n{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;text-decoration:none;color:inherit}.cs-n:hover{background:var(--hl)}.cs-n b{display:block;font-size:.88rem;line-height:1.3}.cs-n small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}" +
     ".cs-n i{width:8px;height:8px;border-radius:50%;background:var(--border);margin-top:6px;flex:none}.cs-n.new i{background:var(--blue)}.cs-n.new.high i{background:var(--err)}.cs-n.new.mid i{background:var(--warn)}.cs-empty{padding:18px 12px;color:var(--muted);font-size:.86rem;text-align:center}" +
     ".cs-ov{position:fixed;inset:0;background:rgba(10,20,48,.45);z-index:70}.cs-drawer{position:fixed;left:0;top:0;bottom:0;width:min(300px,84vw);background:var(--card);color:var(--text);border-right:1px solid var(--border);z-index:71;padding:max(18px,env(safe-area-inset-top)) 12px 18px;overflow:auto;transform:translateX(-102%);visibility:hidden;transition:transform .2s,visibility .2s;display:flex;flex-direction:column;gap:2px}.cs-drawer.open{transform:none;visibility:visible}" +
     ".cs-dh{display:flex;gap:12px;align-items:center;padding:6px 8px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}.cs-dh b{display:block}.cs-dh small{color:var(--muted)}.cs-av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:600;background:linear-gradient(135deg,#14264F,#356DFF);flex:none}" +
-    ".cs-l{display:block;width:100%;padding:13px 12px;border-radius:12px;text-decoration:none;color:inherit;font-size:.95rem;font-weight:600;text-align:left;background:none;border:0;cursor:pointer;font-family:inherit}.cs-l:hover{background:var(--hl)}.cs-out{margin-top:auto;color:var(--err)}";
+    ".cs-l{display:block;width:100%;padding:13px 12px;border-radius:12px;text-decoration:none;color:inherit;font-size:.95rem;font-weight:600;text-align:left;background:none;border:0;cursor:pointer;font-family:inherit}.cs-l:hover{background:var(--hl)}.cs-out{margin-top:auto;color:var(--err)}.embedded .tabbar{display:none!important}.embedded .layout{padding-bottom:28px!important}.embedded .toast{bottom:calc(20px + env(safe-area-inset-bottom))!important}.embedded .fab{bottom:calc(20px + env(safe-area-inset-bottom))!important}";
   document.head.appendChild(st);
 
   function init() {
@@ -540,7 +553,7 @@ window.CS = (function () {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 
-  return { profile: profile, initials: initials, setTheme: setTheme, logout: logout, loggedIn: loggedIn, log: log, activity: activity, ago: ago, refresh: refresh, notices: notices,
+  return { go: go, profile: profile, initials: initials, setTheme: setTheme, logout: logout, loggedIn: loggedIn, log: log, activity: activity, ago: ago, refresh: refresh, notices: notices,
     today: function () { return iso(new Date()); }, eventsOn: eventsOn, tasks: tasks, mins: mins, t12: t12, daysTo: daysTo, fmtDate: fmtDate };
 })();
 </script>
@@ -920,7 +933,7 @@ window.CS = (function () {
      ===================================================================== */
   $("themeBtn").addEventListener("click", function () { applyTheme(resolveMode(state.mode) === "dark" ? "light" : "dark"); });
   $("avatarBtn").addEventListener("click", function () { nav("profile"); });
-  $("backBtn").addEventListener("click", function () { if (state.view === "home") window.location.href = "index.html"; else nav("home"); });
+  $("backBtn").addEventListener("click", function () { if (state.view === "home") CS.go("index.html"); else nav("home"); });
   $("logoutMenu").addEventListener("click", function () { CS.logout(); });
   $("tabMore").addEventListener("click", function (e) { e.preventDefault(); if (state.view === "home") window.scrollTo(0, 0); else nav("home"); });
   window.addEventListener("hashchange", route);

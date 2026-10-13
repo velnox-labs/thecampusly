@@ -42,6 +42,7 @@ function markDirty() { put(DIRTY, "1"); if (!current) return; clearTimeout(timer
 Storage.prototype.setItem = function (k, v) { rawSet.call(this, k, v); if (this === localStorage && !applying && KEYS.indexOf(k) > -1) markDirty(); };
 Storage.prototype.removeItem = function (k) { rawRemove.call(this, k); if (this === localStorage && !applying && KEYS.indexOf(k) > -1) markDirty(); };
 window.addEventListener("pagehide", () => { if (current && get(DIRTY) === "1") push(); });
+window.addEventListener("storage", (e) => { if (e.key && KEYS.indexOf(e.key) > -1 && !applying) markDirty(); });   // saves made inside the app tabs
 window.addEventListener("online", () => { if (current && get(DIRTY) === "1") push(); });   // upload what was saved offline
 
 const DEFAULT_PROFILE = { college: "", branch: "", semester: 1, year: "", sid: "", email: "" };
