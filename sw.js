@@ -1,4 +1,4 @@
-/* Campusly service worker (OPTIONAL). Keep it next to index.html to get offline support.
+/* Campusly service worker (OPTIONAL). Upload it next to index.html AND set ENABLE_SW = true near the top of the last script in index.html.
    Bump VERSION every time you deploy a new index.html so installed apps pick up the update. */
 const VERSION = "campusly-v5";
 const SHELL = ["./", "index.html"];
